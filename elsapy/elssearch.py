@@ -3,11 +3,13 @@
     * https://github.com/ElsevierDev/elsapy
     * https://dev.elsevier.com
     * https://api.elsevier.com"""
+import xmltodict
 
 from . import log_util
 from urllib.parse import quote_plus as url_encode
 import pandas as pd, json
 from .utils import recast_df
+import string
 
 logger = log_util.get_logger(__name__)
 
@@ -27,7 +29,7 @@ class ElsSearch():
         self.index = index
         self._cursor_supported = (index in self._cursored_indexes)
         self._uri = self._base_url + self.index + '?query=' + url_encode(
-                self.query)
+                self.query) + '&count=20'
         self.results_df = pd.DataFrame()
 
     # properties
@@ -93,8 +95,10 @@ class ElsSearch():
             all results for the search, up to a maximum of 5,000."""
         ## TODO: add exception handling
         api_response = els_client.exec_request(self._uri)
+        abstracts_index = 0
         self._tot_num_res = int(api_response['search-results']['opensearch:totalResults'])
         self._results = api_response['search-results']['entry']
+        self.add_abstracts(els_client, abstracts_index)
         if get_all is True:
             while (self.num_res < self.tot_num_res) and not self._upper_limit_reached():
                 for e in api_response['search-results']['link']:
@@ -102,9 +106,49 @@ class ElsSearch():
                         next_url = e['@href']
                 api_response = els_client.exec_request(next_url)
                 self._results += api_response['search-results']['entry']
+                abstracts_index += 20
+                self.add_abstracts(els_client, abstracts_index)
+                stop = input("press y to continue, n to stop")
+                if stop == 'n':
+                    break
         with open('dump.json', 'w') as f:
             f.write(json.dumps(self._results))
         self.results_df = recast_df(pd.DataFrame(self._results))
+
+    def add_abstracts(self, els_client, start = 0):
+        end = start + 19
+        for i in range(start, end):
+            if 'prism:doi' not in self._results[i] or 'pii' not in self._results[i]:
+                continue
+            if 'prism:doi' in self._results[i]:
+                get_abstract_url = "https://api.elsevier.com/content/article/doi/" + self._results[i]['prism:doi']
+            elif 'pii' in self._results[i]:
+                get_abstract_url = "https://api.elsevier.com/content/article/pii/" + self._results[i]['pii']
+            get_abstract_response = els_client.exec_request(get_abstract_url)
+            if 'full-text-retrieval-response' in get_abstract_response \
+                    and 'coredata' in get_abstract_response['full-text-retrieval-response'] \
+                    and 'dc:description' in get_abstract_response['full-text-retrieval-response']['coredata'] \
+                    and get_abstract_response['full-text-retrieval-response']['coredata']['dc:description'] is not None:
+                abstract = get_abstract_response['full-text-retrieval-response']['coredata']['dc:description'].translate(str.maketrans('', '', string.punctuation))
+                self._results[i]['abstract_text'] = abstract.strip()
+                print(self._results[i]['abstract_text'])
+
+    # def add_abstracts(self, els_client):
+    #     for i in self._results:
+    #         if 'prism:doi' not in i or 'pii' not in i:
+    #             continue
+    #         if 'prism:doi' in i:
+    #             get_abstract_url = "https://api.elsevier.com/content/article/doi/" + i['prism:doi']
+    #         elif 'pii' in i:
+    #             get_abstract_url = "https://api.elsevier.com/content/article/pii/" + i['pii']
+    #         get_abstract_response = els_client.exec_request(get_abstract_url)
+    #         if 'full-text-retrieval-response' in get_abstract_response \
+    #                 and 'coredata' in get_abstract_response['full-text-retrieval-response'] \
+    #                 and 'dc:description' in get_abstract_response['full-text-retrieval-response']['coredata'] \
+    #                 and get_abstract_response['full-text-retrieval-response']['coredata']['dc:description'] is not None:
+    #             abstract = get_abstract_response['full-text-retrieval-response']['coredata']['dc:description'].translate(str.maketrans('', '', string.punctuation))
+    #             i['abstract_text'] = abstract.strip()
+    #             print(i['abstract_text'])
 
     def hasAllResults(self):
         """Returns true if the search object has retrieved all results for the
