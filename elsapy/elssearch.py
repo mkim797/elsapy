@@ -116,6 +116,7 @@ class ElsSearch():
         self.results_df = recast_df(pd.DataFrame(self._results))
 
     def add_abstracts(self, els_client, start = 0):
+        """Finds abstracts of document from Scopus Search and adds them to results"""
         end = start + 19
         for i in range(start, end):
             if 'prism:doi' not in self._results[i] or 'pii' not in self._results[i]:
@@ -130,7 +131,12 @@ class ElsSearch():
                     and 'dc:description' in get_abstract_response['full-text-retrieval-response']['coredata'] \
                     and get_abstract_response['full-text-retrieval-response']['coredata']['dc:description'] is not None:
                 abstract = get_abstract_response['full-text-retrieval-response']['coredata']['dc:description'].translate(str.maketrans('', '', string.punctuation))
-                self._results[i]['abstract_text'] = abstract.strip()
+                abstract = " ".join(abstract.split())
+                self._results[i]['abstract_text'] = abstract
+                # text_output = open("output/test.txt", "ab")
+                # text_output.write(self._results[i]['abstract_text'].encode("utf8"))
+                # text_output.write('\n'.encode('utf8'))
+                # text_output.close()
                 print(self._results[i]['abstract_text'])
 
     # def add_abstracts(self, els_client):
