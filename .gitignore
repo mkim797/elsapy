@@ -11,3 +11,6 @@ dump.json
 /dist
 /build
 /elsapy.egg-info
+.idea
+venv
+output
