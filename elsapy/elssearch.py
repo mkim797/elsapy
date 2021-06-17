@@ -108,9 +108,7 @@ class ElsSearch():
                 self._results += api_response['search-results']['entry']
                 abstracts_index += 20
                 self.add_abstracts(els_client, abstracts_index)
-                stop = input("press y to continue, n to stop")
-                if stop == 'n':
-                    break
+                breakpoint()
         with open('dump.json', 'w') as f:
             f.write(json.dumps(self._results))
         self.results_df = recast_df(pd.DataFrame(self._results))
