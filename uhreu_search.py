@@ -28,4 +28,4 @@ doc_srch = ElsSearch(query, 'scopus')
 doc_srch.execute(client, get_all=True)
 print("doc_srch has", len(doc_srch.results), "results.")
 print("doc_srch has", doc_srch.tot_num_res, " total results.")
-doc_srch.results_df.to_csv("output/test2.csv", sep=',', index=False, encoding="utf-8") # find the coverDate from the dictionary
+#doc_srch.results_df.to_csv("output/test2.csv", sep=',', index=False, encoding="utf-8") # find the coverDate from the dictionary

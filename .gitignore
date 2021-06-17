@@ -13,3 +13,4 @@ dump.json
 /elsapy.egg-info
 .idea
 venv
+output
