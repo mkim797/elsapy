@@ -10,6 +10,8 @@ from urllib.parse import quote_plus as url_encode
 import pandas as pd, json
 from .utils import recast_df
 import string
+from pathlib import Path
+import os
 
 logger = log_util.get_logger(__name__)
 
@@ -29,7 +31,7 @@ class ElsSearch():
         self.index = index
         self._cursor_supported = (index in self._cursored_indexes)
         self._uri = self._base_url + self.index + '?query=' + url_encode(
-                self.query) + '&count=20'
+                self.query)# + '&count=20'
         self.results_df = pd.DataFrame()
 
     # properties
@@ -99,21 +101,29 @@ class ElsSearch():
         self._tot_num_res = int(api_response['search-results']['opensearch:totalResults'])
         self._results = api_response['search-results']['entry']
         self.add_abstracts(els_client, abstracts_index)
+        self.results_df = recast_df(pd.DataFrame(self._results))
+        csv_filename_number = 0
+        csv_filename = "output/test"+ str(csv_filename_number) + ".csv"
+        self.results_df.to_csv(csv_filename, mode='a', sep=',', index=False, encoding="utf-8", header=not os.path.exists(csv_filename))
         if get_all is True:
-            while (self.num_res < self.tot_num_res) and not self._upper_limit_reached():
+            while (self.num_res < self.tot_num_res): #and not self._upper_limit_reached():
+                # breakpoint()
                 for e in api_response['search-results']['link']:
                     if e['@ref'] == 'next':
                         next_url = e['@href']
+                        # next_url = next_url.replace('scopus?start=', 'scopus?cursor=')
                 api_response = els_client.exec_request(next_url)
-                self._results += api_response['search-results']['entry']
-                abstracts_index += 20
+                self._results = api_response['search-results']['entry']
                 self.add_abstracts(els_client, abstracts_index)
-                stop = input("press y to continue, n to stop")
-                if stop == 'n':
-                    break
+                self.results_df = recast_df(pd.DataFrame(self._results))
+                self.results_df.to_csv(csv_filename, mode='a', sep=',', index=False, encoding="utf-8", header=not os.path.exists(csv_filename))
+                filesize = Path(csv_filename).stat().st_size
+                if filesize >= 100000:
+                    csv_filename_number += 1
+                    csv_filename = "output/test" + str(csv_filename_number) + ".csv"
+                # breakpoint()
         with open('dump.json', 'w') as f:
             f.write(json.dumps(self._results))
-        self.results_df = recast_df(pd.DataFrame(self._results))
 
     def add_abstracts(self, els_client, start = 0):
         """Finds abstracts of document from Scopus Search and adds them to results"""
@@ -137,7 +147,16 @@ class ElsSearch():
                 # text_output.write(self._results[i]['abstract_text'].encode("utf8"))
                 # text_output.write('\n'.encode('utf8'))
                 # text_output.close()
-                print(self._results[i]['abstract_text'])
+                # print(self._results[i]['abstract_text'])
+
+    def output_csv(self, file_number=0, max_file_size = 100000):
+        csv_filename = "output/test" + str(file_number) + ".csv"
+        self.results_df.to_csv(csv_filename, mode='a', sep=',', index=False, encoding="utf-8",
+                               header=not os.path.exists(csv_filename))
+        filesize = Path(csv_filename).stat().st_size
+        if filesize >= max_file_size:
+            file_number += 1
+        return file_number
 
     # def add_abstracts(self, els_client):
     #     for i in self._results:

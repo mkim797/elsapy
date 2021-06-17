@@ -13,7 +13,7 @@ config = json.load(con_file)
 con_file.close()
 
 ## Initialize client
-client = ElsClient(config['apikey'])
+client = ElsClient(config['apikey']['mark'])
 # client.inst_token = config['insttoken']
 
 ## Initialize doc search object using Scopus and execute search, retrieving
@@ -22,7 +22,7 @@ client = ElsClient(config['apikey'])
 query = "ALL(emotion) OR ALL(emotional) OR ALL(emotions) OR ALL(empathy) OR ALL(empathic) OR ALL(feeling) " \
         "OR ALL(feelings) OR ALL(mood) OR ALL(moods) OR ALL(motivation) OR ALL(motivations) OR ALL(preference) " \
         "OR ALL(preferences) OR ALL(stress) OR ALL(well-being) " \
-        "AND PUBYEAR > 2010"
+        "AND PUBYEAR < 2020"
 # query = "TITLE(Embeddedness) AND TITLE(multinational corporation) AND PUBYEAR = 2011"
 doc_srch = ElsSearch(query, 'scopus')
 doc_srch.execute(client, get_all=True)
