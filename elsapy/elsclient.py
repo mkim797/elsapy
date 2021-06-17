@@ -21,7 +21,7 @@ class ElsClient:
     # class variables
     __url_base = "https://api.elsevier.com/"    ## Base URL for later use
     __user_agent = "elsapy-v%s" % version       ## Helps track library use
-    __min_req_interval = 1                      ## Min. request interval in sec
+    __min_req_interval = 0.111111112            ## Min. request interval in sec
     __ts_last_req = time.time()                 ## Tracker for throttling
  
     # constructors
@@ -115,6 +115,9 @@ class ElsClient:
         self._status_code=r.status_code
         if r.status_code == 200:
             self._status_msg='data retrieved'
+            return json.loads(r.text)
+        elif r.status_code == 404:
+            self._status_msg = 'resource not found'
             return json.loads(r.text)
         else:
             self._status_msg="HTTP " + str(r.status_code) + " Error from " + URL + " and using headers " + str(headers) + ": " + r.text
