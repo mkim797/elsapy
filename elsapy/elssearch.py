@@ -96,7 +96,6 @@ class ElsSearch():
         else:
             return self.num_res >= 5000
 
-    
     def execute(self, els_client = None, get_all = False):
         """Executes the search. If get_all = False (default), this retrieves
             the default number of results specified for the API. If
@@ -109,7 +108,6 @@ class ElsSearch():
         self._results = api_response['search-results']['entry']
         self.add_abstracts(els_client, abstracts_index)
         self.results_df = self.results_df.append(recast_df(pd.DataFrame(self._results)))
-        # breakpoint()
         csv_filename_number = 0
         csv_filename = "output/test"+ str(csv_filename_number) + ".csv"
         self.results_df.to_csv(csv_filename, mode='a', sep=',', index=False, encoding="utf-8", header=not os.path.exists(csv_filename))
