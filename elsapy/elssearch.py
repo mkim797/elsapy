@@ -32,7 +32,7 @@ class ElsSearch():
         self.num_records = 25
         self._cursor_supported = (index in self._cursored_indexes)
         self._uri = self._base_url + self.index + '?query=' + url_encode(
-                self.query) + '&count=' + str(self.num_records)
+                self.query) + '&count=' + str(self.num_records) + '&view=COMPLETE&cursor=*'
         columns = ['@_fa','link','prism:url','dc:identifier','eid','dc:title','prism:aggregationType','subtype',
                    'subtypeDescription','citedby-count','prism:publicationName','prism:isbn','prism:issn',
                    'prism:volume','prism:issueIdentifier','prism:pageRange','prism:coverDate','prism:coverDisplayDate',
@@ -117,7 +117,7 @@ class ElsSearch():
                 for e in api_response['search-results']['link']:
                     if e['@ref'] == 'next':
                         next_url = e['@href']
-                        # next_url = next_url.replace('scopus?start=', 'scopus?cursor=')
+                        next_url = next_url.replace('scopus?start=', 'scopus?cursor=')
                 api_response = els_client.exec_request(next_url)
                 self._results = api_response['search-results']['entry']
                 self.add_abstracts(els_client, abstracts_index)
@@ -127,6 +127,7 @@ class ElsSearch():
                 if filesize >= self.max_file_size:
                     csv_filename_number += 1
                     csv_filename = "output/test" + str(csv_filename_number) + ".csv"
+                    breakpoint()
         with open('dump.json', 'w') as f:
             f.write(json.dumps(self._results))
 
